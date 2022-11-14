@@ -139,7 +139,7 @@ class LoginManager extends React.Component {
         return e("div",null, this.props.isLoggedIn ? e("span",null,"logged in as: "+this.props.username) : 
                 e("form",{id:"login-form"}
                     ,e("p",null,this.props.loginerror)
-                    ,e("input",{type:"text",placeholder:"username...",onChange:this.handleUsernameInput})
+                    ,e("input",{type:"text",placeholder:"email...",onChange:this.handleUsernameInput})
                     ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
                     ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
                     ,e("button",{type:"button",onClick:()=>this.handleRegister()},"register")
@@ -196,7 +196,11 @@ class App extends React.Component {
         if( typeof resp.token !== 'undefined' && resp.token != "" ) {
             this.setState({username: resp.user.email, token: resp.token, loginerror: "", isLoggedIn:true});
         } else {
-            this.setState({username: "", token: "", loginerror: "login failed (bad password?), please try again.", isLoggedIn: false})
+            var msg = "login failed";
+            if( typeof resp !== "String" ) {
+                msg = resp;
+            }
+            this.setState({username: "", token: "", loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
         }
     }
     handleProductChange( p ) {
@@ -211,7 +215,12 @@ class App extends React.Component {
             }).then((response) => response.json()).then((response)=>this.handleUserChange(response));
     }
     tryRegister( username , password ) {
-        this.setState({loginerror: ""});
+        var params = {name:username, email:username, password:password};
+        fetch( "https://api-nodejs-todolist.herokuapp.com/user/register" , {
+                  method: 'POST'
+                , headers: {'Content-Type': 'application/json'}
+                , body: JSON.stringify(params)
+            }).then((response) => response.json()).then((response)=>this.handleUserChange(response));
     }
     render() {
         return e("div",null,e(LoginManager,{
