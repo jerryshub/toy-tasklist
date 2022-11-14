@@ -144,13 +144,13 @@ class LoginManager extends React.Component {
     handlePasswordInput(t){ this.setState({passwordFromUser:t}); }
     render(){
         return e("div",null, this.state.isLoggedIn ? e("span",null,"logged in as: "+this.props.username) : 
-            e( "form",{id:"login-form"}
-                ,e("input",{type:"text",placeholder:"username...",onChange:this.handleUsernameInput})
-                ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
-                ,e("span",null,this.state.failedLogin?"login failed (bad password?), please try again":"")
-                ,e("span",null,this.state.failedRegister?"user registration failed (user already exists?), please try again":"")
-                ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
-                ,e("button",{type:"button",onClick:()=>this.handleRegister()},"register")
+                e("form",{id:"login-form"}
+                    ,e("p",null,this.state.failedLogin?"login failed (bad password?), please try again":"")
+                    ,e("p",null,this.state.failedRegister?"user registration failed (user already exists?), please try again":"")
+                    ,e("input",{type:"text",placeholder:"username...",onChange:this.handleUsernameInput})
+                    ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
+                    ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
+                    ,e("button",{type:"button",onClick:()=>this.handleRegister()},"register")
             )
         )
     }
@@ -161,7 +161,7 @@ class App extends React.Component {
         super(props);
         this.state = {}
         this.state.username = "";
-        this.state.logintoken = "";
+        this.state.token = "";
         this.state.products = [{
                 category: 'Sporting Goods',
                 price: '$49.99',
@@ -216,7 +216,7 @@ class App extends React.Component {
         return false;
     }
     render() {
-        return e("div",null,e(LoginManager,{username:this.state.username,token:this.state.logintoken,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister})
+        return e("div",null,e(LoginManager,{username:this.state.username,token:this.state.token,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister})
             ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
     }
 }
