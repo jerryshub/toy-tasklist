@@ -106,41 +106,94 @@ class FilterableProductTable extends React.Component {
     }));
   }
 }
-const PRODUCTS = [{
-  category: 'Sporting Goods',
-  price: '$49.99',
-  stocked: true,
-  name: 'Football'
-}, {
-  category: 'Sporting Goods',
-  price: '$9.99',
-  stocked: true,
-  name: 'Baseball'
-}, {
-  category: 'Sporting Goods',
-  price: '$29.99',
-  stocked: false,
-  name: 'Basketball'
-}, {
-  category: 'Electronics',
-  price: '$99.99',
-  stocked: true,
-  name: 'iPod Touch'
-}, {
-  category: 'Electronics',
-  price: '$399.99',
-  stocked: false,
-  name: 'iPhone 5'
-}, {
-  category: 'Electronics',
-  price: '$199.99',
-  stocked: true,
-  name: 'Nexus 7'
-}];
-const root = ReactDOM.createRoot(document.getElementById('tasklist_container'));
-root.render( e(FilterableProductTable, {
-  products: PRODUCTS
-}));
 
+class LoginManager extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {};
+        this.state.usernameFromUser = "";
+        this.state.passwordFromUser = "";
+        this.handleUsernameInput = this.handleUsernameInput.bind(this);
+        this.handlePasswordInput = this.handlePasswordInput.bind(this);
+    }
+    isLoggedIn() { return( this.props.token != "" ); }
+    handleLogin() {
+        alert(this.props.token); 
+        if( this.state.usernameFromUser != "" ) {
+            this.setState({
+                username: this.state.usernameFromUser ,
+                token: "foo"
+            });
+        }
+    }
+    handleRegister() {
+    }
+    handleUsernameInput(t){ this.setState({usernameFromUser:t}); }
+    handlePasswordInput(t){ this.setState({passwordFromUser:t}); }
+    render(){
+        return e("div",null, this.isLoggedIn() ? "logged in as: "+e("span",null,this.props.username) : 
+            e( "form",{id:"login-form"}
+                ,e("input",{type:"text",placeholder:"username...",onChange:this.handleUsernameInput})
+                ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
+                ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
+                ,e("button",{type:"button",onClick:()=>this.handleRegister()},"register")
+            )
+        )
+    }
+}
 
+class App extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {}
+        this.state.username = "";
+        this.state.logintoken = "";
+        this.state.products = [{
+                category: 'Sporting Goods',
+                price: '$49.99',
+                stocked: true,
+                name: 'Football'
+            }, {
+                category: 'Sporting Goods',
+                price: '$9.99',
+                stocked: true,
+                name: 'Baseball'
+            }, {
+                category: 'Sporting Goods',
+                price: '$29.99',
+                stocked: false,
+                name: 'Basketball'
+            }, {
+                category: 'Electronics',
+                price: '$99.99',
+                stocked: true,
+                name: 'iPod Touch'
+            }, {
+                category: 'Electronics',
+                price: '$399.99',
+                stocked: false,
+                name: 'iPhone 5'
+            }, {
+                category: 'Electronics',
+                price: '$199.99',
+                stocked: true,
+                name: 'Nexus 7'
+            }]
+        this.handleUserChange = this.handleUserChange.bind(this);
+        this.handleProductChange = this.handleProductChange.bind(this);
+    }
+    handleUserChange( u , t ) {
+        this.setState({username: u, token: t});
+    }
+    handleProductChange( p ) {
+        this.setState({products: p});
+    }
+    render() {
+        return e("div",null,e(LoginManager,{username:this.state.username,token:this.state.logintoken,handleUserChange:this.handleUserChange})
+            ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
+    }
+}
+
+const app = ReactDOM.createRoot(document.getElementById('tasklist_container'));
+app.render(e(App,null));
 
