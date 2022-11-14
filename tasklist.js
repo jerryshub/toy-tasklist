@@ -123,12 +123,14 @@ class LoginManager extends React.Component {
         }
     }
 
+    handleLogout() {
+        this.props.tryLogout();
+    }
+
     handleRegister() {
         if( typeof this.state.usernameFromUser.target !== "undefined" && typeof this.state.passwordFromUser.target !== "undefined" ) {
             if( this.props.tryRegister(this.state.usernameFromUser.target.value,this.state.passwordFromUser.target.value) ) {
                 this.handleLogin();
-            } else {
-                this.setState({failedLogin:false,failedRegister:true,isLoggedIn:false});
             }
         }
     }
@@ -136,7 +138,10 @@ class LoginManager extends React.Component {
     handleUsernameInput(t){ this.setState({usernameFromUser:t}); }
     handlePasswordInput(t){ this.setState({passwordFromUser:t}); }
     render(){
-        return e("div",null, this.props.isLoggedIn ? e("span",null,"logged in as: "+this.props.username) : 
+        return e("div",null, this.props.isLoggedIn ? 
+                e("div",null,
+                    e("span",null,"logged in as: "+this.props.username) 
+                    ,e("button",{type:"button",onClick:()=>this.handleLogout()},"logout") ): 
                 e("form",{id:"login-form"}
                     ,e("p",null,this.props.loginerror)
                     ,e("input",{type:"text",placeholder:"email...",onChange:this.handleUsernameInput})
@@ -191,13 +196,16 @@ class App extends React.Component {
         this.handleProductChange = this.handleProductChange.bind(this);
         this.tryLogin = this.tryLogin.bind(this);
         this.tryRegister = this.tryRegister.bind(this);
+        this.tryLogout = this.tryLogout.bind(this);
     }
-    handleUserChange( resp ) { // response from the fetch() call to login
+    handleUserChange( resp , isLogout ) { // response from the fetch() call to login
         if( typeof resp.token !== 'undefined' && resp.token != "" ) {
             this.setState({username: resp.user.email, token: resp.token, loginerror: "", isLoggedIn:true});
+        } else if( isLogout ) {
+            this.setState({username: "", token: "", loginerror: "Logged out.", isLoggedIn: false})
         } else {
             var msg = "login failed";
-            if( typeof resp !== "String" ) {
+            if( typeof resp === "String" ) {
                 msg = resp;
             }
             this.setState({username: "", token: "", loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
@@ -206,29 +214,39 @@ class App extends React.Component {
     handleProductChange( p ) {
         this.setState({products: p});
     }
+
     tryLogin( username , password ) {
         var params = {email:username, password:password};
         fetch( "https://api-nodejs-todolist.herokuapp.com/user/login" , {
                   method: 'POST'
                 , headers: {'Content-Type': 'application/json'}
                 , body: JSON.stringify(params)
-            }).then((response) => response.json()).then((response)=>this.handleUserChange(response));
+            }).then((response) => response.json()).then((response)=>this.handleUserChange(response,false));
     }
+
     tryRegister( username , password ) {
         var params = {name:username, email:username, password:password};
         fetch( "https://api-nodejs-todolist.herokuapp.com/user/register" , {
                   method: 'POST'
                 , headers: {'Content-Type': 'application/json'}
                 , body: JSON.stringify(params)
-            }).then((response) => response.json()).then((response)=>this.handleUserChange(response));
+            }).then((response) => response.json()).then((response)=>this.handleUserChange(response,false));
     }
+
+    tryLogout() {
+        fetch( "https://api-nodejs-todolist.herokuapp.com/user/logout" , {
+                  method: 'POST'
+                , headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer '+this.state.token }
+            }).then((response) => response.json()).then((response)=>this.handleUserChange(response,true));
+    }
+
     render() {
         return e("div",null,e(LoginManager,{
                 username: this.state.username
                 ,token: this.state.token
                 ,loginerror: this.state.loginerror
                 ,isLoggedIn: this.state.isLoggedIn
-                ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister})
+                ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
             ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
     }
 }
