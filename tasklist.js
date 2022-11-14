@@ -114,31 +114,41 @@ class LoginManager extends React.Component {
         this.state.usernameFromUser = "";
         this.state.passwordFromUser = "";
         this.state.failedLogin = false;
+        this.state.failedRegister = false;
         this.state.isLoggedIn = false;
         this.handleUsernameInput = this.handleUsernameInput.bind(this);
         this.handlePasswordInput = this.handlePasswordInput.bind(this);
     }
+
     handleLogin() {
         if( typeof this.state.usernameFromUser.target !== "undefined" && typeof this.state.passwordFromUser.target !== "undefined" ) {
             if( this.props.tryLogin(this.state.usernameFromUser.target.value,this.state.passwordFromUser.target.value) ) {
-                this.setState({failedLogin:false,isLoggedIn:true});
+                this.setState({failedLogin:false,failedRegister:false,isLoggedIn:true});
             } else {
-                this.setState({failedLogin:true,isLoggedIn:false});
+                this.setState({failedLogin:true,failedRegister:false,isLoggedIn:false});
             }
         }
     }
+
     handleRegister() {
+        if( typeof this.state.usernameFromUser.target !== "undefined" && typeof this.state.passwordFromUser.target !== "undefined" ) {
+            if( this.props.tryRegister(this.state.usernameFromUser.target.value,this.state.passwordFromUser.target.value) ) {
+                this.handleLogin();
+            } else {
+                this.setState({failedLogin:false,failedRegister:true,isLoggedIn:false});
+            }
+        }
     }
+
     handleUsernameInput(t){ this.setState({usernameFromUser:t}); }
     handlePasswordInput(t){ this.setState({passwordFromUser:t}); }
     render(){
-        console.log(this.props);
-        console.log(this.props.username);
         return e("div",null, this.state.isLoggedIn ? e("span",null,"logged in as: "+this.props.username) : 
             e( "form",{id:"login-form"}
                 ,e("input",{type:"text",placeholder:"username...",onChange:this.handleUsernameInput})
                 ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
-                ,e("span",null,this.state.failedLogin?"login failed, please try again":"")
+                ,e("span",null,this.state.failedLogin?"login failed (bad password?), please try again":"")
+                ,e("span",null,this.state.failedRegister?"user registration failed (user already exists?), please try again":"")
                 ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
                 ,e("button",{type:"button",onClick:()=>this.handleRegister()},"register")
             )
@@ -186,6 +196,7 @@ class App extends React.Component {
         this.handleUserChange = this.handleUserChange.bind(this);
         this.handleProductChange = this.handleProductChange.bind(this);
         this.tryLogin = this.tryLogin.bind(this);
+        this.tryRegister = this.tryRegister.bind(this);
     }
     handleUserChange( u , t ) {
         this.setState({username: u, token: t});
@@ -201,8 +212,11 @@ class App extends React.Component {
             return false;
         }
     }
+    tryRegister( username , password ) {
+        return false;
+    }
     render() {
-        return e("div",null,e(LoginManager,{username:this.state.username,token:this.state.logintoken,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin})
+        return e("div",null,e(LoginManager,{username:this.state.username,token:this.state.logintoken,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister})
             ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
     }
 }
