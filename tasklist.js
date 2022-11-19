@@ -228,11 +228,16 @@ class App extends React.Component {
     }
 
     // handles when the task/key/update api call returns 
-    handleTaskChange( index , resp , wasDeleted , wasAdded ) {
+    handleTaskChange( index , taskid , resp , wasDeleted , wasAdded ) {
         // FIXME there is probably a better way to setState() just one index of the array (i.e. so that React knows that it has to re-render after the state change), but i didn't figure it out yet. we can work around it using forceUpdate();
 
         if( wasDeleted ) {
-            this.state.tasks.splice(index,1);
+            // had an asynch issue where if you click the delete button a couple times, it would remove a few rows
+            // from the local display instead of just the one row. trying to hedge against that behavior here.
+            // I could just reload the whole task list, but it seems like a waste. I don't know the best practice here.
+            if( this.state.tasks[index]._id == taskid ) {
+                this.state.tasks.splice(index,1);
+            }
             this.setState({appfeedback:"Task deleted."});
         } else {
             if( typeof resp.data !== 'undefined' ) {
@@ -241,7 +246,9 @@ class App extends React.Component {
                     //FIXME I should use two different fields for error messages and success messages.
                     this.setState({appfeedback:"Task added."});
                 } else {
-                    this.state.tasks[index] = resp.data;
+                    if( this.state.tasks[index]._id == taskid ) {
+                        this.state.tasks[index] = resp.data;
+                    }
                     this.setState({appfeedback:"Task updated."});
                 }
             } else {
@@ -272,7 +279,7 @@ class App extends React.Component {
                   method: 'PUT'
                 , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
                 , body: JSON.stringify(params)
-            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,response,false,false)).catch(this.setError);
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,newValues._id,response,false,false)).catch(this.setError);
     } 
 
     deleteTask( idToDelete ) {
@@ -280,7 +287,7 @@ class App extends React.Component {
         fetch( "https://api-nodejs-todolist.herokuapp.com/task/"+idToDelete , {
                   method: 'DELETE'
                 , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
-            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,response,true,false)).catch(this.setError);
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,idToDelete,response,true,false)).catch(this.setError);
     } 
 
     addTask( newDescr ) {
@@ -289,7 +296,7 @@ class App extends React.Component {
                   method: 'POST'
                 , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
                 , body: JSON.stringify(params)
-            }).then((response) => response.json()).then((response)=>this.handleTaskChange(-1,response,false,true)).catch(this.setError);
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(-1,-1,response,false,true)).catch(this.setError);
     } 
 
     // used this twice, so i'll pull it out
