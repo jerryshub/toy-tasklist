@@ -1,112 +1,6 @@
 'use strict';
 const e = React.createElement;
 
-class ProductCategoryRow extends React.Component {
-  render() {
-    const category = this.props.category;
-    return e("tr", null, e("th", {
-      colSpan: "2"
-    }, category));
-  }
-}
-class ProductRow extends React.Component {
-  render() {
-    const product = this.props.product;
-    const name = product.stocked ? product.name : e("span", {
-      style: {
-        color: 'red'
-      }
-    }, product.name);
-    return e("tr", null, e("td", null, name), e("td", null, product.price));
-  }
-}
-class ProductTable extends React.Component {
-  render() {
-    const filterText = this.props.filterText;
-    const inStockOnly = this.props.inStockOnly;
-    const rows = [];
-    let lastCategory = null;
-    this.props.products.forEach(product => {
-      if (product.name.indexOf(filterText) === -1) {
-        return;
-      }
-      if (inStockOnly && !product.stocked) {
-        return;
-      }
-      if (product.category !== lastCategory) {
-        rows.push( e(ProductCategoryRow, {
-          category: product.category,
-          key: product.category
-        }));
-      }
-      rows.push( e(ProductRow, {
-        product: product,
-        key: product.name
-      }));
-      lastCategory = product.category;
-    });
-    return e("table", null, e("thead", null, e("tr", null, e("th", null, "Name"), e("th", null, "Price"))), e("tbody", null, rows));
-  }
-}
-class SearchBar extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleFilterTextChange = this.handleFilterTextChange.bind(this);
-    this.handleInStockChange = this.handleInStockChange.bind(this);
-  }
-  handleFilterTextChange(e) {
-    this.props.onFilterTextChange(e.target.value);
-  }
-  handleInStockChange(e) {
-    this.props.onInStockChange(e.target.checked);
-  }
-  render() {
-    return e("form", null, e("input", {
-      type: "text",
-      placeholder: "Search...",
-      value: this.props.filterText,
-      onChange: this.handleFilterTextChange
-    }), e("p", null, e("input", {
-      type: "checkbox",
-      checked: this.props.inStockOnly,
-      onChange: this.handleInStockChange
-    }), ' ', "Only show products in stock"));
-  }
-}
-class FilterableProductTable extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      filterText: '',
-      inStockOnly: false
-    };
-    this.handleFilterTextChange = this.handleFilterTextChange.bind(this);
-    this.handleInStockChange = this.handleInStockChange.bind(this);
-  }
-  handleFilterTextChange(filterText) {
-    this.setState({
-      filterText: filterText
-    });
-  }
-  handleInStockChange(inStockOnly) {
-    this.setState({
-      inStockOnly: inStockOnly
-    });
-  }
-  render() {
-    return e("div", null, e(SearchBar, {
-      filterText: this.state.filterText,
-      inStockOnly: this.state.inStockOnly,
-      onFilterTextChange: this.handleFilterTextChange,
-      onInStockChange: this.handleInStockChange
-    }), e(ProductTable, {
-      products: this.props.products,
-      filterText: this.state.filterText,
-      inStockOnly: this.state.inStockOnly
-    }));
-  }
-}
-
 class LoginManager extends React.Component {
     constructor(props) {
         super(props);
@@ -201,24 +95,44 @@ class TaskTable extends React.Component {
         super(props);
         this.state = {};
         this.state.newTaskText = "";
+        this.state.incompleteOnly = false;
         this.handleNewTaskTextChange = this.handleNewTaskTextChange.bind(this);
+        this.handleFilterChange = this.handleFilterChange.bind(this);
         this.handleAdd = this.handleAdd.bind(this);
+        this.preventDefault = this.preventDefault.bind(this);
     }
 
     handleAdd(){ this.props.addTask(this.state.newTaskText); this.setState({newTaskText:""}); }
+
+    handleFilterChange(newIncompleteOnly) { 
+        this.setState({incompleteOnly:newIncompleteOnly.target.checked}); 
+    }
 
     handleNewTaskTextChange(e) {
         this.setState({newTaskText:e.target.value});
     }
 
+    // to prevent it from reloading the page if you hit enter while typing in a new task.
+    preventDefault(e) {
+        if( typeof e.key === 'undefined' || e.key === 'Enter' ) {
+            e.preventDefault();
+        }
+    }
+
     render() {
+        if( ! this.props.isLoggedIn ) {
+            return "";
+        }
         const rows = [];
         this.props.tasks.forEach( task => {
-            rows.push( e(TaskFormRow,{ task: task, key: task._id , updateTask: this.props.updateTask , deleteTask: this.props.deleteTask}) );
+            if( !this.state.incompleteOnly || !task.completed ) {
+                rows.push( e(TaskFormRow,{ task: task, key: task._id , updateTask: this.props.updateTask , deleteTask: this.props.deleteTask}) );
+            }
         });
-        return e("form",null,
-                e("input",{type:"text", placeholder: "new task...",value:this.state.newTaskText,onChange:this.handleNewTaskTextChange})
+        return e("form",{onSubmit:this.preventDefault},
+                e("input",{type:"text", placeholder: "new task...",value:this.state.newTaskText,onChange:this.handleNewTaskTextChange,onKeyPress:this.preventDefault})
                 ,e("button",{type:"button",onClick:()=>this.handleAdd()},"add task")
+                ,e("div",null,e("input",{type:"checkbox",id:"incompleteOnly",checked:this.state.incompleteOnly,onChange:this.handleFilterChange}) , e("label",{htmlFor:"incompleteOnly"},"Show incomplete tasks only") )
                 ,e("table",null,
                   e("thead",null,e("tr",null,
                     e("th",null,"Task")
@@ -238,59 +152,10 @@ class App extends React.Component {
         this.state.token = "";
         this.state.isLoggedIn = "";
         this.state.loginerror = "";
-        this.state.apperror = "";
-        this.state.tasks = [{
-                 _id: "1a"
-                ,description: "task 1a"
-                ,completed: false
-            },{
-                 _id: "1b"
-                ,description: "task 1b"
-                ,completed: false
-            },{
-                 _id: "1c"
-                ,description: "task 1c"
-                ,completed: true
-            },{
-                 _id: "1d"
-                ,description: "task 1d"
-                ,completed: false
-            }];
+        this.state.appfeedback = "";
+        this.state.tasks = [];
             
-        this.state.products = [{
-                category: 'Sporting Goods',
-                price: '$49.99',
-                stocked: true,
-                name: 'Football'
-            }, {
-                category: 'Sporting Goods',
-                price: '$9.99',
-                stocked: true,
-                name: 'Baseball'
-            }, {
-                category: 'Sporting Goods',
-                price: '$29.99',
-                stocked: false,
-                name: 'Basketball'
-            }, {
-                category: 'Electronics',
-                price: '$99.99',
-                stocked: true,
-                name: 'iPod Touch'
-            }, {
-                category: 'Electronics',
-                price: '$399.99',
-                stocked: false,
-                name: 'iPhone 5'
-            }, {
-                category: 'Electronics',
-                price: '$199.99',
-                stocked: true,
-                name: 'Nexus 7'
-            }]
-
         this.handleUserChange = this.handleUserChange.bind(this);
-        this.handleProductChange = this.handleProductChange.bind(this);
         this.handleTaskListChange = this.handleTaskListChange.bind(this);
         this.tryLogin = this.tryLogin.bind(this);
         this.tryRegister = this.tryRegister.bind(this);
@@ -318,12 +183,8 @@ class App extends React.Component {
             this.setState({username: "", token: "", tasks: [] , loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
         }
     }
-    handleProductChange( p ) {
-        this.setState({products: p});
-    }
 
     handleTaskListChange( resp ) {
-        console.log(resp);
         if( typeof resp.data !== 'undefined' ) {
             this.setState({tasks: resp.data});
         } else {
@@ -369,18 +230,20 @@ class App extends React.Component {
     // handles when the task/key/update api call returns 
     handleTaskChange( index , resp , wasDeleted , wasAdded ) {
         // FIXME there is probably a better way to setState() just one index of the array (i.e. so that React knows that it has to re-render after the state change), but i didn't figure it out yet. we can work around it using forceUpdate();
-        console.log(resp);
 
         if( wasDeleted ) {
             this.state.tasks.splice(index,1);
+            this.setState({appfeedback:"Task deleted."});
         } else {
             if( typeof resp.data !== 'undefined' ) {
                 if( wasAdded ) {
                     this.state.tasks.push( resp.data );
+                    //FIXME I should use two different fields for error messages and success messages.
+                    this.setState({appfeedback:"Task added."});
                 } else {
                     this.state.tasks[index] = resp.data;
+                    this.setState({appfeedback:"Task updated."});
                 }
-                this.setState({apperror:""});
             } else {
                 this.setError();
             }
@@ -391,13 +254,11 @@ class App extends React.Component {
     setError( err ) {
         // FIXME I would love to give a little more information here, but i haven't immediately figured out how to
         // extract useful information from whatever is being passed in here.
-        console.log(err);
         var msg = "An error occurred. please try again, or log out and back in.";
-        this.setState({apperror:msg});
+        this.setState({appfeedback:msg});
     }
 
     updateTask( newValues ) { 
-        console.log(newValues);
         // i can't just pass in newValues because it chokes on the _id key, i think. And I want to make sure that I'm only updating the keys I wanted to update.
         var params = {};
         if( typeof newValues.description !== 'undefined' ) {
@@ -451,9 +312,9 @@ class App extends React.Component {
                 ,loginerror: this.state.loginerror
                 ,isLoggedIn: this.state.isLoggedIn
                 ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
-            ,e("div",{id:"error"},this.state.apperror)
-            ,e(TaskTable,{tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask , addTask:this.addTask})
-            ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
+            ,e("div",{id:"error"},this.state.appfeedback)
+            ,e(TaskTable,{isLoggedIn: this.state.isLoggedIn , tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask , addTask:this.addTask})
+            );
     }
 }
 
