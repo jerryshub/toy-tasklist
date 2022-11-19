@@ -1,6 +1,7 @@
 'use strict';
 const e = React.createElement;
 
+// handles login and registration form
 class LoginManager extends React.Component {
     constructor(props) {
         super(props);
@@ -46,8 +47,9 @@ class LoginManager extends React.Component {
             )
         )
     }
-}
+} // LoginManager
 
+// prints one row of the task list
 class TaskFormRow extends React.Component {
     constructor(props) {
         super(props);
@@ -88,8 +90,9 @@ class TaskFormRow extends React.Component {
                     ,e("td",null,e("button",{type:"button",onClick:()=>this.handleDelete()},"delete"))
             );
     }
-}
+} // TaskFormRow
 
+// prints the tast list table
 class TaskTable extends React.Component {
     constructor(props){
         super(props);
@@ -99,10 +102,12 @@ class TaskTable extends React.Component {
         this.handleNewTaskTextChange = this.handleNewTaskTextChange.bind(this);
         this.handleFilterChange = this.handleFilterChange.bind(this);
         this.handleAdd = this.handleAdd.bind(this);
+        this.handleRefresh = this.handleRefresh.bind(this);
         this.preventDefault = this.preventDefault.bind(this);
     }
 
     handleAdd(){ this.props.addTask(this.state.newTaskText); this.setState({newTaskText:""}); }
+    handleRefresh(){ this.props.loadTasks(); }
 
     handleFilterChange(newIncompleteOnly) { 
         this.setState({incompleteOnly:newIncompleteOnly.target.checked}); 
@@ -133,6 +138,7 @@ class TaskTable extends React.Component {
                 e("input",{type:"text", placeholder: "new task...",value:this.state.newTaskText,onChange:this.handleNewTaskTextChange,onKeyPress:this.preventDefault})
                 ,e("button",{type:"button",onClick:()=>this.handleAdd()},"add task")
                 ,e("div",null,e("input",{type:"checkbox",id:"incompleteOnly",checked:this.state.incompleteOnly,onChange:this.handleFilterChange}) , e("label",{htmlFor:"incompleteOnly"},"Show incomplete tasks only") )
+                ,e("button",{type:"button",onClick:()=>this.handleRefresh()},"refresh list")
                 ,e("table",null,
                   e("thead",null,e("tr",null,
                     e("th",null,"Task")
@@ -142,7 +148,7 @@ class TaskTable extends React.Component {
                 ,e("tbody",null,rows)
             ));
     }
-}
+} // TaskTable
 
 class App extends React.Component {
     constructor(props) {
@@ -188,6 +194,7 @@ class App extends React.Component {
         if( typeof resp.data !== 'undefined' ) {
             this.setState({tasks: resp.data});
         } else {
+            this.setError();
         }
     }
 
@@ -320,10 +327,10 @@ class App extends React.Component {
                 ,isLoggedIn: this.state.isLoggedIn
                 ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
             ,e("div",{id:"error"},this.state.appfeedback)
-            ,e(TaskTable,{isLoggedIn: this.state.isLoggedIn , tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask , addTask:this.addTask})
+            ,e(TaskTable,{isLoggedIn: this.state.isLoggedIn , tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask , addTask:this.addTask , loadTasks:this.loadTasks})
             );
     }
-}
+} // App
 
 const app = ReactDOM.createRoot(document.getElementById('tasklist_container'));
 app.render(e(App,null));
