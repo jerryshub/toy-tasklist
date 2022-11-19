@@ -179,36 +179,25 @@ class TaskFormRow extends React.Component {
     handleCancelEdit(){ this.setState({editing:false}); }
 
     render() {
-        console.log(this.props);
-        console.log(this.state);
 
-        const descCellWhenEditing = e("input",{type:"text",defaultValue:this.state.descriptionFromUser,onChange:this.handleDescriptionInput})           
-                            + e("button",{type:"button",onClick:()=>this.handleEdit()},"save")
-                            + e("button",{type:"button",onClick:()=>this.handleCancelEdit()},"cancel");
-        const descCell = e("span",null,this.state.descriptionFromUser)
-                              + e("button",{type:"button",onClick:()=>this.handleEdit()},"edit");
+        const descCellWhenEditing = e("td",null,e("input",{type:"text",defaultValue:this.state.descriptionFromUser,onChange:this.handleDescriptionInput})           
+                            , e("button",{type:"button",onClick:()=>this.handleUpdate()},"save")
+                            , e("button",{type:"button",onClick:()=>this.handleCancelEdit()},"cancel") );
+        const descCell = e("td", null, e("span",null,this.state.descriptionFromUser)
+                            , e("button",{type:"button",onClick:()=>this.handleEdit()},"edit") );
+
+        const markCompleteCell = e("td",null,e("span",null,"incomplete "), e("button",{type:"button",onClick:()=>this.handleMarkComplete()},"mark complete"));
+        const markCompleteCellWhenComplete = e("td",null,e("span",null,"completed "));
 
         return e( "tr" , null , 
-                    e("td",null, this.state.editing ? 
-                            (e("input",{type:"text",defaultValue:this.state.descriptionFromUser,onChange:this.handleDescriptionInput}) 
-                            , e("button",{type:"button",onClick:()=>this.handleEdit()},"save")
-                            , e("button",{type:"button",onClick:()=>this.handleCancelEdit()},"cancel"))
-                          : (e("span",null,this.state.descriptionFromUser), 
-                                e("button",{type:"button",onClick:()=>this.handleEdit()},"edit"))
-                        )
-                    , e("td",null, this.state.completed ? 
-                            e("span",null,"completed ")
-                          : e("span",null,"incomplete "), e("button",{type:"button",onClick:()=>this.handleMarkComplete()},"mark complete")
-                        )
+                     this.state.editing ? descCellWhenEditing : descCell 
+                    , this.state.completed ? markCompleteCellWhenComplete : markCompleteCell
                     ,e("td",null,e("button",{type:"button",onClick:()=>this.handleDelete()},"delete"))
             );
     }
 }
 
 class TaskTable extends React.Component {
-    constructor(props) {
-        super(props);
-    }
     render() {
         const rows = [];
         this.props.tasks.forEach( task => {
