@@ -34,7 +34,7 @@ As I'm sure you can tell, I haven't done one of these before (my experience has 
 
 I think it would be nice if the application showed some additional information, like the due date. I also find that I personally often want to split my work into two queues -- a "slow lane" for long term project work and a "fast lane" for operational tasks and quick fixes. 
 
-A general way to solve both of those problems (plus many others) might be to add a key/value pair tagging system, and an API call to search for tasks by tag. Then the front-end developer could tag tasks with "DUE_DATE=2022-12-01" to track due dates, or "QUEUE=FASTLANE"/"QUEUE=SLOWLANE" to implement the multiple queues thing. Plus many other things I haven't thought of. Perhaps this is overly complicated? But it would mean that we don't have to change the API every time someone has a new idea.
+A general way to solve both of those problems (plus many others) might be to add a key/value pair tagging system, and an API call to search for tasks by tag. Then the front-end developer could tag tasks with "DUE_DATE=2022-12-01" to track due dates, or "QUEUE=FASTLANE"/"QUEUE=SLOWLANE" to implement the multiple queues thing, then display the tasks sorted by due date or display the different queues in different lists, etc. Plus many other things I haven't thought of. Perhaps this is overly complicated? But it would mean that we don't have to change the API every time someone has a new idea.
 
 There are a few FIXMEs in the javascript code that call out various subtleties that I am still looking into.
 
