@@ -137,6 +137,7 @@ class LoginManager extends React.Component {
 
     handleUsernameInput(t){ this.setState({usernameFromUser:t}); }
     handlePasswordInput(t){ this.setState({passwordFromUser:t}); }
+
     render(){
         return e("div",null, this.props.isLoggedIn ? 
                 e("div",null,
@@ -153,6 +154,77 @@ class LoginManager extends React.Component {
     }
 }
 
+class TaskFormRow extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {};
+        this.state.descriptionFromUser = this.props.task.description;
+        this.state.completed = this.props.task.completed;
+        this.state.editing = false;
+
+        this.handleDescriptionInput = this.handleDescriptionInput.bind(this);
+        this.handleMarkComplete = this.handleMarkComplete.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
+        this.handleEdit = this.handleEdit.bind(this);
+
+    }
+    handleDescriptionInput(t){ this.setState({descriptionFromUser:t.target.value}); }
+    handleUpdate(){ 
+        this.props.updateTask({id:this.props.id, description: this.state.descriptionFromUser }); 
+        this.setState({editing:false});
+    }
+    handleMarkComplete(){ this.props.updateTask({id:this.props.id, completed:true}); }
+    handleDelete(){ this.props.deleteTask({id:this.props.id}); }
+    handleEdit(){ this.setState({editing:true}); }
+    handleCancelEdit(){ this.setState({editing:false}); }
+
+    render() {
+        console.log(this.props);
+        console.log(this.state);
+
+        const descCellWhenEditing = e("input",{type:"text",defaultValue:this.state.descriptionFromUser,onChange:this.handleDescriptionInput})           
+                            + e("button",{type:"button",onClick:()=>this.handleEdit()},"save")
+                            + e("button",{type:"button",onClick:()=>this.handleCancelEdit()},"cancel");
+        const descCell = e("span",null,this.state.descriptionFromUser)
+                              + e("button",{type:"button",onClick:()=>this.handleEdit()},"edit");
+
+        return e( "tr" , null , 
+                    e("td",null, this.state.editing ? 
+                            (e("input",{type:"text",defaultValue:this.state.descriptionFromUser,onChange:this.handleDescriptionInput}) 
+                            , e("button",{type:"button",onClick:()=>this.handleEdit()},"save")
+                            , e("button",{type:"button",onClick:()=>this.handleCancelEdit()},"cancel"))
+                          : (e("span",null,this.state.descriptionFromUser), 
+                                e("button",{type:"button",onClick:()=>this.handleEdit()},"edit"))
+                        )
+                    , e("td",null, this.state.completed ? 
+                            e("span",null,"completed ")
+                          : e("span",null,"incomplete "), e("button",{type:"button",onClick:()=>this.handleMarkComplete()},"mark complete")
+                        )
+                    ,e("td",null,e("button",{type:"button",onClick:()=>this.handleDelete()},"delete"))
+            );
+    }
+}
+
+class TaskTable extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+    render() {
+        const rows = [];
+        this.props.tasks.forEach( task => {
+            rows.push( e(TaskFormRow,{ task: task, key: task.id , updateTask: this.props.updateTask , deleteTask: this.props.deleteTask}) );
+        });
+        return e("form",null,e("table",null,
+                e("thead",null,e("tr",null,
+                    e("th",null,"Task")
+                    ,e("th",null,"completed?")
+                    ,e("th",null,"delete?")
+                ))
+                ,e("tbody",null,rows)
+            ));
+    }
+}
+
 class App extends React.Component {
     constructor(props) {
         super(props);
@@ -161,6 +233,24 @@ class App extends React.Component {
         this.state.token = "";
         this.state.isLoggedIn = "";
         this.state.loginerror = "";
+        this.state.tasks = [{
+                 id: "1a"
+                ,description: "task 1a"
+                ,completed: false
+            },{
+                 id: "1b"
+                ,description: "task 1b"
+                ,completed: false
+            },{
+                 id: "1c"
+                ,description: "task 1c"
+                ,completed: true
+            },{
+                 id: "1d"
+                ,description: "task 1d"
+                ,completed: false
+            }];
+            
         this.state.products = [{
                 category: 'Sporting Goods',
                 price: '$49.99',
@@ -192,11 +282,14 @@ class App extends React.Component {
                 stocked: true,
                 name: 'Nexus 7'
             }]
+
         this.handleUserChange = this.handleUserChange.bind(this);
         this.handleProductChange = this.handleProductChange.bind(this);
         this.tryLogin = this.tryLogin.bind(this);
         this.tryRegister = this.tryRegister.bind(this);
         this.tryLogout = this.tryLogout.bind(this);
+        this.updateTask = this.updateTask.bind(this);
+        this.deleteTask = this.deleteTask.bind(this);
     }
     handleUserChange( resp , isLogout ) { // response from the fetch() call to login
         if( typeof resp.token !== 'undefined' && resp.token != "" ) {
@@ -240,6 +333,9 @@ class App extends React.Component {
             }).then((response) => response.json()).then((response)=>this.handleUserChange(response,true));
     }
 
+    updateTask( newValues ) {;} 
+    deleteTask( idToDelete ) {;} 
+
     render() {
         return e("div",null,e(LoginManager,{
                 username: this.state.username
@@ -247,6 +343,7 @@ class App extends React.Component {
                 ,loginerror: this.state.loginerror
                 ,isLoggedIn: this.state.isLoggedIn
                 ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
+            ,e(TaskTable,{tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask})
             ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
     }
 }
