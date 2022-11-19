@@ -166,15 +166,14 @@ class TaskFormRow extends React.Component {
         this.handleMarkComplete = this.handleMarkComplete.bind(this);
         this.handleDelete = this.handleDelete.bind(this);
         this.handleEdit = this.handleEdit.bind(this);
-
     }
     handleDescriptionInput(t){ this.setState({descriptionFromUser:t.target.value}); }
     handleUpdate(){ 
-        this.props.updateTask({id:this.props.task.id, description: this.state.descriptionFromUser }); 
+        this.props.updateTask({_id:this.props.task._id, description: this.state.descriptionFromUser }); 
         this.setState({editing:false});
     }
-    handleMarkComplete(){ this.props.updateTask({id:this.props.task.id, completed:true}); this.setState({completed:true}); }
-    handleDelete(){ this.props.deleteTask({id:this.props.task.id}); }
+    handleMarkComplete(){ this.props.updateTask({_id:this.props.task._id, completed:true}); this.setState({completed:true}); }
+    handleDelete(){ this.props.deleteTask(this.props.task._id); }
     handleEdit(){ this.setState({editing:true}); }
     handleCancelEdit(){ this.setState({descriptionFromUser:this.props.task.description,editing:false}); }
 
@@ -198,13 +197,30 @@ class TaskFormRow extends React.Component {
 }
 
 class TaskTable extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {};
+        this.state.newTaskText = "";
+        this.handleNewTaskTextChange = this.handleNewTaskTextChange.bind(this);
+        this.handleAdd = this.handleAdd.bind(this);
+    }
+
+    handleAdd(){ this.props.addTask(this.state.newTaskText); this.setState({newTaskText:""}); }
+
+    handleNewTaskTextChange(e) {
+        this.setState({newTaskText:e.target.value});
+    }
+
     render() {
         const rows = [];
         this.props.tasks.forEach( task => {
-            rows.push( e(TaskFormRow,{ task: task, key: task.id , updateTask: this.props.updateTask , deleteTask: this.props.deleteTask}) );
+            rows.push( e(TaskFormRow,{ task: task, key: task._id , updateTask: this.props.updateTask , deleteTask: this.props.deleteTask}) );
         });
-        return e("form",null,e("table",null,
-                e("thead",null,e("tr",null,
+        return e("form",null,
+                e("input",{type:"text", placeholder: "new task...",value:this.state.newTaskText,onChange:this.handleNewTaskTextChange})
+                ,e("button",{type:"button",onClick:()=>this.handleAdd()},"add task")
+                ,e("table",null,
+                  e("thead",null,e("tr",null,
                     e("th",null,"Task")
                     ,e("th",null,"completed?")
                     ,e("th",null,"delete?")
@@ -222,20 +238,21 @@ class App extends React.Component {
         this.state.token = "";
         this.state.isLoggedIn = "";
         this.state.loginerror = "";
+        this.state.apperror = "";
         this.state.tasks = [{
-                 id: "1a"
+                 _id: "1a"
                 ,description: "task 1a"
                 ,completed: false
             },{
-                 id: "1b"
+                 _id: "1b"
                 ,description: "task 1b"
                 ,completed: false
             },{
-                 id: "1c"
+                 _id: "1c"
                 ,description: "task 1c"
                 ,completed: true
             },{
-                 id: "1d"
+                 _id: "1d"
                 ,description: "task 1d"
                 ,completed: false
             }];
@@ -274,27 +291,54 @@ class App extends React.Component {
 
         this.handleUserChange = this.handleUserChange.bind(this);
         this.handleProductChange = this.handleProductChange.bind(this);
+        this.handleTaskListChange = this.handleTaskListChange.bind(this);
         this.tryLogin = this.tryLogin.bind(this);
         this.tryRegister = this.tryRegister.bind(this);
         this.tryLogout = this.tryLogout.bind(this);
         this.updateTask = this.updateTask.bind(this);
         this.deleteTask = this.deleteTask.bind(this);
+        this.addTask = this.addTask.bind(this);
+        this.setError = this.setError.bind(this);
+        this.loadTasks = this.loadTasks.bind(this);
     }
     handleUserChange( resp , isLogout ) { // response from the fetch() call to login
         if( typeof resp.token !== 'undefined' && resp.token != "" ) {
             this.setState({username: resp.user.email, token: resp.token, loginerror: "", isLoggedIn:true});
+            // FIXME: some async issue here, where even though i just setState(token: resp.token), it is
+            // not there when this function runs. I guess I will make an optional argument to pass it in
+            // but this is not a good solution.
+            this.loadTasks( resp.token );
         } else if( isLogout ) {
-            this.setState({username: "", token: "", loginerror: "Logged out.", isLoggedIn: false})
+            this.setState({username: "", token: "", tasks: [] , loginerror: "Logged out.", isLoggedIn: false})
         } else {
             var msg = "login failed";
             if( typeof resp === "String" ) {
                 msg = resp;
             }
-            this.setState({username: "", token: "", loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
+            this.setState({username: "", token: "", tasks: [] , loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
         }
     }
     handleProductChange( p ) {
         this.setState({products: p});
+    }
+
+    handleTaskListChange( resp ) {
+        console.log(resp);
+        if( typeof resp.data !== 'undefined' ) {
+            this.setState({tasks: resp.data});
+        } else {
+        }
+    }
+
+    loadTasks( optionalToken ) {
+        var token = this.state.token;
+        if( typeof optionalToken !== 'undefined' ) {
+            token = optionalToken
+        }
+        fetch( "https://api-nodejs-todolist.herokuapp.com/task" , {
+                  method: 'GET'
+                , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+token }
+            }).then((response) => response.json()).then((response)=>this.handleTaskListChange(response)).catch(this.setError);
     }
 
     tryLogin( username , password ) {
@@ -322,19 +366,69 @@ class App extends React.Component {
             }).then((response) => response.json()).then((response)=>this.handleUserChange(response,true));
     }
 
-    updateTask( newValues ) { 
-        const index = this.findTaskIndexById( newValues.id );
-        console.log(this.state.tasks);
-        console.log(newValues);
-        console.log(index);
+    // handles when the task/key/update api call returns 
+    handleTaskChange( index , resp , wasDeleted , wasAdded ) {
+        // FIXME there is probably a better way to setState() just one index of the array (i.e. so that React knows that it has to re-render after the state change), but i didn't figure it out yet. we can work around it using forceUpdate();
+        console.log(resp);
 
-        this.state.tasks[index].completed = true;
+        if( wasDeleted ) {
+            this.state.tasks.splice(index,1);
+        } else {
+            if( typeof resp.data !== 'undefined' ) {
+                if( wasAdded ) {
+                    this.state.tasks.push( resp.data );
+                } else {
+                    this.state.tasks[index] = resp.data;
+                }
+                this.setState({apperror:""});
+            } else {
+                this.setError();
+            }
+        }
         this.forceUpdate();
+    }
+
+    setError( err ) {
+        // FIXME I would love to give a little more information here, but i haven't immediately figured out how to
+        // extract useful information from whatever is being passed in here.
+        console.log(err);
+        var msg = "An error occurred. please try again, or log out and back in.";
+        this.setState({apperror:msg});
+    }
+
+    updateTask( newValues ) { 
+        console.log(newValues);
+        // i can't just pass in newValues because it chokes on the _id key, i think. And I want to make sure that I'm only updating the keys I wanted to update.
+        var params = {};
+        if( typeof newValues.description !== 'undefined' ) {
+            params.description = newValues.description;
+        }
+        if( typeof newValues.completed !== 'undefined' ) {
+            params.completed = newValues.completed;
+        }
+        const index = this.findTaskIndexById( newValues._id );
+        fetch( "https://api-nodejs-todolist.herokuapp.com/task/"+newValues._id , {
+                  method: 'PUT'
+                , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
+                , body: JSON.stringify(params)
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,response,false,false)).catch(this.setError);
     } 
+
     deleteTask( idToDelete ) {
         const index = this.findTaskIndexById( idToDelete );
-        this.state.tasks.splice(index,1);
-        this.forceUpdate();
+        fetch( "https://api-nodejs-todolist.herokuapp.com/task/"+idToDelete , {
+                  method: 'DELETE'
+                , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(index,response,true,false)).catch(this.setError);
+    } 
+
+    addTask( newDescr ) {
+        const params = {description: newDescr};
+        fetch( "https://api-nodejs-todolist.herokuapp.com/task" , {
+                  method: 'POST'
+                , headers: {'Content-Type': 'application/json' , 'Authorization': 'Bearer '+this.state.token}
+                , body: JSON.stringify(params)
+            }).then((response) => response.json()).then((response)=>this.handleTaskChange(-1,response,false,true)).catch(this.setError);
     } 
 
     // used this twice, so i'll pull it out
@@ -342,7 +436,7 @@ class App extends React.Component {
         // FIXME it would be better if this.state.tasks was a map of maps or a struct of structs instead of an array of structs (i.e. since the lookup would be immediate instead of having to do this loop). but i didn't immediately figure out how to get React to loop over a struct (i.e. forEach is a member of the array but not a member of the struct), and I am running out of time, so i gave up on that and we'll just do this lame loop. computers are fast, it'll be fine. if the guy has 10^6 tasks then he's got bigger problems anyway.
         var index = -1;
         for( var i=0; i<this.state.tasks.length; i++ ) {
-            if( this.state.tasks[i].id == taskid ) {
+            if( this.state.tasks[i]._id == taskid ) {
                 index = i;
                 break;
             }
@@ -357,7 +451,8 @@ class App extends React.Component {
                 ,loginerror: this.state.loginerror
                 ,isLoggedIn: this.state.isLoggedIn
                 ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
-            ,e(TaskTable,{tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask})
+            ,e("div",{id:"error"},this.state.apperror)
+            ,e(TaskTable,{tasks:this.state.tasks, updateTask:this.updateTask, deleteTask:this.deleteTask , addTask:this.addTask})
             ,e(FilterableProductTable,{products:this.state.products,handleProductChange:this.handleProductChange}));
     }
 }
