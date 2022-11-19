@@ -170,13 +170,13 @@ class TaskFormRow extends React.Component {
     }
     handleDescriptionInput(t){ this.setState({descriptionFromUser:t.target.value}); }
     handleUpdate(){ 
-        this.props.updateTask({id:this.props.id, description: this.state.descriptionFromUser }); 
+        this.props.updateTask({id:this.props.task.id, description: this.state.descriptionFromUser }); 
         this.setState({editing:false});
     }
-    handleMarkComplete(){ this.props.updateTask({id:this.props.id, completed:true}); }
-    handleDelete(){ this.props.deleteTask({id:this.props.id}); }
+    handleMarkComplete(){ this.props.updateTask({id:this.props.task.id, completed:true}); this.setState({completed:true}); }
+    handleDelete(){ this.props.deleteTask({id:this.props.task.id}); }
     handleEdit(){ this.setState({editing:true}); }
-    handleCancelEdit(){ this.setState({editing:false}); }
+    handleCancelEdit(){ this.setState({descriptionFromUser:this.props.task.description,editing:false}); }
 
     render() {
 
@@ -322,8 +322,33 @@ class App extends React.Component {
             }).then((response) => response.json()).then((response)=>this.handleUserChange(response,true));
     }
 
-    updateTask( newValues ) {;} 
-    deleteTask( idToDelete ) {;} 
+    updateTask( newValues ) { 
+        const index = this.findTaskIndexById( newValues.id );
+        console.log(this.state.tasks);
+        console.log(newValues);
+        console.log(index);
+
+        this.state.tasks[index].completed = true;
+        this.forceUpdate();
+    } 
+    deleteTask( idToDelete ) {
+        const index = this.findTaskIndexById( idToDelete );
+        this.state.tasks.splice(index,1);
+        this.forceUpdate();
+    } 
+
+    // used this twice, so i'll pull it out
+    findTaskIndexById( taskid ) {
+        // FIXME it would be better if this.state.tasks was a map of maps or a struct of structs instead of an array of structs (i.e. since the lookup would be immediate instead of having to do this loop). but i didn't immediately figure out how to get React to loop over a struct (i.e. forEach is a member of the array but not a member of the struct), and I am running out of time, so i gave up on that and we'll just do this lame loop. computers are fast, it'll be fine. if the guy has 10^6 tasks then he's got bigger problems anyway.
+        var index = -1;
+        for( var i=0; i<this.state.tasks.length; i++ ) {
+            if( this.state.tasks[i].id == taskid ) {
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
 
     render() {
         return e("div",null,e(LoginManager,{
