@@ -37,9 +37,8 @@ class LoginManager extends React.Component {
         return e("div",null, this.props.isLoggedIn ? 
                 e("div",null,
                     e("span",null,"logged in as: "+this.props.username) 
-                    ,e("button",{type:"button",onClick:()=>this.handleLogout()},"logout") ): 
+                    ,e("button",{type:"button",onClick:()=>this.handleLogout()},"logout") ) : 
                 e("form",{id:"login-form"}
-                    ,e("p",null,this.props.loginerror)
                     ,e("input",{type:"text",placeholder:"email...",onChange:this.handleUsernameInput})
                     ,e("input",{type:"password",placeholder:"password...",onChange:this.handlePasswordInput}) 
                     ,e("button",{type:"button",onClick:()=>this.handleLogin()},"login")
@@ -157,7 +156,6 @@ class App extends React.Component {
         this.state.username = "";
         this.state.token = "";
         this.state.isLoggedIn = "";
-        this.state.loginerror = "";
         this.state.appfeedback = "";
         this.state.tasks = [];
             
@@ -174,19 +172,19 @@ class App extends React.Component {
     }
     handleUserChange( resp , isLogout ) { // response from the fetch() call to login
         if( typeof resp.token !== 'undefined' && resp.token != "" ) {
-            this.setState({username: resp.user.email, token: resp.token, loginerror: "", isLoggedIn:true});
+            this.setState({username: resp.user.email, token: resp.token, appfeedback: "", isLoggedIn:true});
             // FIXME: some async issue here, where even though i just setState(token: resp.token), it is
             // not there when this function runs. I guess I will make an optional argument to pass it in
             // but this is not a good solution.
             this.loadTasks( resp.token );
         } else if( isLogout ) {
-            this.setState({username: "", token: "", tasks: [] , loginerror: "Logged out.", isLoggedIn: false})
+            this.setState({username: "", token: "", tasks: [] , appfeedback: "Logged out.", isLoggedIn: false})
         } else {
             var msg = "login failed";
             if( typeof resp === "String" ) {
                 msg = resp;
             }
-            this.setState({username: "", token: "", tasks: [] , loginerror: "error: "+msg+" -- please try again.", isLoggedIn: false})
+            this.setState({username: "", token: "", tasks: [] , appfeedback: "error: "+msg+" -- please try again.", isLoggedIn: false})
         }
     }
 
@@ -323,7 +321,6 @@ class App extends React.Component {
         return e("div",null,e(LoginManager,{
                 username: this.state.username
                 ,token: this.state.token
-                ,loginerror: this.state.loginerror
                 ,isLoggedIn: this.state.isLoggedIn
                 ,handleUserChange:this.handleUserChange,tryLogin:this.tryLogin,tryRegister:this.tryRegister,tryLogout:this.tryLogout})
             ,e("div",{id:"error"},this.state.appfeedback)
