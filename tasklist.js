@@ -24,9 +24,7 @@ class LoginManager extends React.Component {
 
     handleRegister() {
         if( typeof this.state.usernameFromUser.target !== "undefined" && typeof this.state.passwordFromUser.target !== "undefined" ) {
-            if( this.props.tryRegister(this.state.usernameFromUser.target.value,this.state.passwordFromUser.target.value) ) {
-                this.handleLogin();
-            }
+            this.props.tryRegister(this.state.usernameFromUser.target.value,this.state.passwordFromUser.target.value);
         }
     }
 
@@ -191,6 +189,7 @@ class App extends React.Component {
     handleTaskListChange( resp ) {
         if( typeof resp.data !== 'undefined' ) {
             this.setState({tasks: resp.data});
+            this.setState({appfeedback:"Task list loaded."});
         } else {
             this.setError();
         }
