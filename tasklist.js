@@ -240,6 +240,9 @@ class App extends React.Component {
             // had an asynch issue where if you click the delete button a couple times, it would remove a few rows
             // from the local display instead of just the one row. trying to hedge against that behavior here.
             // I could just reload the whole task list, but it seems like a waste. I don't know the best practice here.
+            // FIXME i think I have seen applications like this in which the button disappears after you click it once, 
+            // to prevent you from clicking it a bunch of times and running into this issue? Maybe that is a more common
+            // practice? but I think this is ok for now.
             if( this.state.tasks[index]._id == taskid ) {
                 this.state.tasks.splice(index,1);
             }
