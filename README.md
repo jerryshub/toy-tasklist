@@ -16,7 +16,7 @@ Tasks are stored using the API backend, provided by POSTMAN at https://documente
 
 The front-end uses React.js (https://reactjs.org/), and pulls in a live reference to the library as a dependency. If we think users are likely to run into connectivity issues, we might store a local copy of the library or something like that.
 
-The application does a lot on the client side, and as such it's possible for the client and server to get out of sync if e.g. you open a second tab and log in again. There is a "refresh" button to help mitigate this kind of issue.
+The application does a lot on the client side, and as such it's possible for the client and server to get out of sync if e.g. you open a second tab and log in again, and then start working in both tabs at the same time. There is a "refresh" button to help mitigate this kind of issue.
 
 ## Installation
 
